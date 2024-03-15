@@ -538,7 +538,7 @@ namespace FixPluginTypesSerialization.Util
 
                 if (currentInt == RSDS.Magic)
                 {
-#if NET35 || NET40
+#if NET35 || NET40 || NET472
                     var rsdsStructByteArray = reader.ReadBytes(Marshal.SizeOf(typeof(RSDS)));
 #else
                     var rsdsStructByteArray = reader.ReadBytes(Marshal.SizeOf<RSDS>());
@@ -546,7 +546,7 @@ namespace FixPluginTypesSerialization.Util
                     var handle = GCHandle.Alloc(rsdsStructByteArray, GCHandleType.Pinned);
                     try
                     {
-#if NET35 || NET40
+#if NET35 || NET40 || NET472
                         var rsdsStruct = (RSDS)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(RSDS));
 #else
                         var rsdsStruct = Marshal.PtrToStructure<RSDS>(handle.AddrOfPinnedObject());

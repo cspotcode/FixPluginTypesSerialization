@@ -166,7 +166,7 @@ namespace FixPluginTypesSerialization.Util
             }
         }
 
-#if NET35 || NET40
+#if NET35 || NET40 || NET472
         private class WebClientWithTimeout : WebClient
         {
             public TimeSpan Timeout { get; set; } = TimeSpan.FromMinutes(5);
