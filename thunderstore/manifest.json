@@ -1,0 +1,10 @@
+{
+  "name": "FixPluginTypesSerialization",
+  "author": "xiaoxiao921",
+  "description": "FOR PLUGIN MAKERS - Allow custom [Serializable] classes and structs in plugin assemblies to be deserialized by the engine.",
+  "version_number": "0.0.1",
+  "website_url": "https://github.com/cspotcode/FixPluginTypesSerialization",
+  "dependencies": [
+    "BepInEx-BepInExPack-5.4.2100"
+  ]
+}
