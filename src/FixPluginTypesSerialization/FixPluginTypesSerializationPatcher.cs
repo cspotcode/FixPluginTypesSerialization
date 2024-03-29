@@ -42,6 +42,10 @@ namespace FixPluginTypesSerialization
         {
             Log.Init();
 
+            foreach(var p in PluginPaths) {
+                Log.Message("PluginPath:" + p);
+            }
+
             try
             {
                 InitializeInternal();
@@ -66,15 +70,17 @@ namespace FixPluginTypesSerialization
             {
                 unityDllPath = BepInEx.Paths.ExecutablePath;
             }
+            
+            Log.Message("unityDllPath: " + unityDllPath);
 
-            static bool IsUnityPlayer(ProcessModule p)
-            {
+            static bool IsUnityPlayer(ProcessModule p) {
+                Log.Message("IUP: " + p.ModuleName.ToLowerInvariant());
                 return p.ModuleName.ToLowerInvariant().Contains("unityplayer");
             }
 
-            var proc = Process.GetCurrentProcess().Modules
-                .Cast<ProcessModule>()
-                .FirstOrDefault(IsUnityPlayer) ?? Process.GetCurrentProcess().MainModule;
+            var temp = Process.GetCurrentProcess().Modules
+                .Cast<ProcessModule>();
+            var proc = temp.FirstOrDefault(IsUnityPlayer) ?? Process.GetCurrentProcess().MainModule;
 
             var patternDiscoverer = new PatternDiscoverer(proc.BaseAddress, unityDllPath);
             CommonUnityFunctions.Init(patternDiscoverer);
@@ -87,12 +93,17 @@ namespace FixPluginTypesSerialization
             
             awakeFromLoadPatcher.Patch(patternDiscoverer, Config.MonoManagerAwakeFromLoadOffset);
             isAssemblyCreatedPatcher.Patch(patternDiscoverer, Config.MonoManagerIsAssemblyCreatedOffset);
-            if (!IsAssemblyCreated.IsApplied)
-            {
-                isFileCreatedPatcher.Patch(patternDiscoverer, Config.IsFileCreatedOffset);
-            }
+            // if (!IsAssemblyCreated.IsApplied)
+            // {
+            //     isFileCreatedPatcher.Patch(patternDiscoverer, Config.IsFileCreatedOffset);
+            // }
             convertSeparatorsToPlatformPatcher.Patch(patternDiscoverer, Config.ConvertSeparatorsToPlatformOffset);
             scriptingManagerDeconstructorPatcher.Patch(patternDiscoverer, Config.ScriptingManagerDeconstructorOffset);
+
+            foreach(var m in Process.GetCurrentProcess().Modules
+                .Cast<ProcessModule>()) {
+                Log.Message("F: " + m.ModuleName.ToLowerInvariant());
+            }
         }
     }
 }
