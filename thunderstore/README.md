@@ -8,9 +8,11 @@ This solve a bug where custom Serializable structs and such stored in plugin ass
 
 Note: you must *explicitly* enable this mod for your plugins.  Adding a FixPluginTypesSerialization.txt to your mod, containing the filename of one DLL per line.
 
+<!--
 For example, for the TombRush mod, we use a `FixPluginTypesSerialization.txt` that looks like this:
 
 ```
 TombRush.Common.dll
 TombRush.Plugin.dll
 ```
+-->
