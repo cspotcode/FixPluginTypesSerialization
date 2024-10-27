@@ -45,7 +45,9 @@ namespace FixPluginTypesSerialization.Patchers
         }
 
         private static unsafe bool OnIsAssemblyCreated(IntPtr _monoManager, int index) {
+#if DETAILED_DEBUG
             Log.Message("index=" + index + " VanillaAssemblyCount=" + VanillaAssemblyCount);
+#endif
             if (index >= VanillaAssemblyCount)
             {
                 return true;
