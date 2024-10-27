@@ -14,11 +14,44 @@ namespace FixPluginTypesSerialization
     {
         public static IEnumerable<string> TargetDLLs { get; } = new string[0];
 
-        public static List<string> PluginPaths = 
-            Directory.GetFiles(BepInEx.Paths.PluginPath, "*.dll", SearchOption.AllDirectories)
-            .Where(f => IsNetAssembly(f))
-            .ToList();
-        public static List<string> PluginNames = PluginPaths.Select(p => Path.GetFileName(p)).ToList();
+        static FixPluginTypesSerializationPatcher() {
+            var rootDir = BepInEx.Paths.PluginPath + "\\";
+            var includeListFilename = "FixPluginTypesSerialization.txt";
+            Log.Info($"Scanning for include-lists named {includeListFilename} in {rootDir}...");
+            string relative(string path) {
+                return path.Replace(rootDir, "");
+            }
+            // Find any FixPluginTypesSerialization.txt files in entire plugins directory
+            var includePatterns = Directory.GetFiles(rootDir, includeListFilename, SearchOption.AllDirectories)
+                .SelectMany(absPath => {
+                    var path = relative(absPath);
+                    Log.Info($"Reading include-list {path}");
+                    return File.ReadAllLines(absPath)
+                        .Select(line => new { Rule = line, IncludeListPath = path })
+                        .ToList();
+                });
+            PluginPaths = Directory.GetFiles(BepInEx.Paths.PluginPath, "*.dll", SearchOption.AllDirectories)
+                .Where(absPath => {
+                    if(IsNetAssembly(absPath)) {
+                        var included = includePatterns.FirstOrDefault(pattern => pattern.Rule == Path.GetFileName(absPath));
+                        var path = relative(absPath);
+                        if(included != null) {
+                            Log.Info($"Assembly included: {path}");
+                            Log.Info($"  Include-list file: {included.IncludeListPath}");
+                            return true;
+                        } else {
+                            Log.Info($"Assembly excluded because no include-list mentioned it: {path}");
+                        }
+                    }
+                    return false;
+                })
+                .ToList();
+            PluginNames = PluginPaths.Select(Path.GetFileName).ToList();
+        }
+
+        public static List<string> PluginPaths;
+
+        public static List<string> PluginNames;
 
         public static bool IsNetAssembly(string fileName)
         {
