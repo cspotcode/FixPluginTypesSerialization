@@ -14,11 +14,46 @@ namespace FixPluginTypesSerialization
     {
         public static IEnumerable<string> TargetDLLs { get; } = new string[0];
 
-        public static List<string> PluginPaths = 
-            Directory.GetFiles(BepInEx.Paths.PluginPath, "*.dll", SearchOption.AllDirectories)
-            .Where(f => IsNetAssembly(f))
-            .ToList();
-        public static List<string> PluginNames = PluginPaths.Select(p => Path.GetFileName(p)).ToList();
+        static FixPluginTypesSerializationPatcher() {
+            var rootDir = BepInEx.Paths.PluginPath + "\\";
+            string relative(string path) {
+                return path.Replace(rootDir, "");
+            }
+            
+            var includeListFilename = "FixPluginTypesSerialization.txt";
+            Log.Info($"Scanning for include-lists named {includeListFilename} in {rootDir}...");
+            // Find any FixPluginTypesSerialization.txt files in entire plugins directory
+            var includeLists = Directory.GetFiles(rootDir, includeListFilename, SearchOption.AllDirectories);
+            var includePatterns = includeLists
+                .SelectMany(absPath => {
+                    var path = relative(absPath);
+                    Log.Info($"Parsing {path}");
+                    return File.ReadAllLines(absPath)
+                        .Select(line => new { Rule = line, IncludeListPath = path })
+                        .ToList();
+                }).ToArray();
+            PluginPaths = Directory.GetFiles(BepInEx.Paths.PluginPath, "*.dll", SearchOption.AllDirectories)
+                .Where(absPath => {
+                    if(IsNetAssembly(absPath)) {
+                        var included = includePatterns.FirstOrDefault(pattern => pattern.Rule.ToLowerInvariant() == Path.GetFileName(absPath).ToLowerInvariant());
+                        var path = relative(absPath);
+                        if(included != null) {
+                            Log.Info($"Assembly included: {path}");
+                            Log.Info($"  Mentioned by: {included.IncludeListPath}");
+                            return true;
+                        } else {
+                            Log.Info($"Assembly excluded: {path}");
+                        }
+                    }
+                    return false;
+                })
+                .ToList();
+            PluginNames = PluginPaths.Select(Path.GetFileName).ToList();
+        }
+
+        public static List<string> PluginPaths;
+
+        public static List<string> PluginNames;
 
         public static bool IsNetAssembly(string fileName)
         {
@@ -41,6 +76,12 @@ namespace FixPluginTypesSerialization
         public static void Initialize()
         {
             Log.Init();
+
+#if DETAILED_DEBUG
+            foreach(var p in PluginPaths) {
+                Log.Message("PluginPath:" + p);
+            }
+#endif
 
             try
             {
@@ -66,15 +107,21 @@ namespace FixPluginTypesSerialization
             {
                 unityDllPath = BepInEx.Paths.ExecutablePath;
             }
+ 
+#if DETAILED_DEBUG
+            Log.Message("unityDllPath: " + unityDllPath);
+#endif
 
-            static bool IsUnityPlayer(ProcessModule p)
-            {
+            static bool IsUnityPlayer(ProcessModule p) {
+#if DETAILED_DEBUG
+                Log.Message("IUP: " + p.ModuleName.ToLowerInvariant());
+#endif
                 return p.ModuleName.ToLowerInvariant().Contains("unityplayer");
             }
 
-            var proc = Process.GetCurrentProcess().Modules
-                .Cast<ProcessModule>()
-                .FirstOrDefault(IsUnityPlayer) ?? Process.GetCurrentProcess().MainModule;
+            var temp = Process.GetCurrentProcess().Modules
+                .Cast<ProcessModule>();
+            var proc = temp.FirstOrDefault(IsUnityPlayer) ?? Process.GetCurrentProcess().MainModule;
 
             var patternDiscoverer = new PatternDiscoverer(proc.BaseAddress, unityDllPath);
             CommonUnityFunctions.Init(patternDiscoverer);
@@ -87,12 +134,19 @@ namespace FixPluginTypesSerialization
             
             awakeFromLoadPatcher.Patch(patternDiscoverer, Config.MonoManagerAwakeFromLoadOffset);
             isAssemblyCreatedPatcher.Patch(patternDiscoverer, Config.MonoManagerIsAssemblyCreatedOffset);
-            if (!IsAssemblyCreated.IsApplied)
-            {
-                isFileCreatedPatcher.Patch(patternDiscoverer, Config.IsFileCreatedOffset);
-            }
+            // if (!IsAssemblyCreated.IsApplied)
+            // {
+            //     isFileCreatedPatcher.Patch(patternDiscoverer, Config.IsFileCreatedOffset);
+            // }
             convertSeparatorsToPlatformPatcher.Patch(patternDiscoverer, Config.ConvertSeparatorsToPlatformOffset);
             scriptingManagerDeconstructorPatcher.Patch(patternDiscoverer, Config.ScriptingManagerDeconstructorOffset);
+
+#if DETAILED_DEBUG
+            foreach(var m in Process.GetCurrentProcess().Modules
+                .Cast<ProcessModule>()) {
+                Log.Message("F: " + m.ModuleName.ToLowerInvariant());
+            }
+#endif
         }
     }
 }

@@ -4,6 +4,7 @@
     <TargetFrameworks>net472</TargetFrameworks>
 <!--    <TargetFrameworks>net472;net35;net40;netstandard2.0</TargetFrameworks>-->
     <LangVersion>preview</LangVersion>
+    <DebugType>Full</DebugType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

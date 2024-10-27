@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using FixPluginTypesSerialization.Util;
@@ -43,8 +44,10 @@ namespace FixPluginTypesSerialization.Patchers
             IsApplied = false;
         }
 
-        private static unsafe bool OnIsAssemblyCreated(IntPtr _monoManager, int index)
-        {
+        private static unsafe bool OnIsAssemblyCreated(IntPtr _monoManager, int index) {
+#if DETAILED_DEBUG
+            Log.Message("index=" + index + " VanillaAssemblyCount=" + VanillaAssemblyCount);
+#endif
             if (index >= VanillaAssemblyCount)
             {
                 return true;

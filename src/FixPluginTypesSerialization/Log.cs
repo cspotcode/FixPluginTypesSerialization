@@ -6,7 +6,8 @@ namespace FixPluginTypesSerialization
     {
         internal static ManualLogSource _logSource;
 
-        internal static void Init()
+        internal static void Init() {}
+        static Log()
         {
             _logSource = Logger.CreateLogSource("FixPluginTypesSerialization");
         }
